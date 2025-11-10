@@ -31,8 +31,8 @@ app.use(helmet({
 
 app.use(cors({
   origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    process.env.ADMIN_URL || 'http://localhost:5174',
+    process.env.FRONTEND_URL || 'http://localhost:5173' || 'http://thebrunchtraiteur.fr/',
+    process.env.ADMIN_URL || 'http://localhost:5174' || 'http://thebrunchtraiteur.fr/admin',
     'http://localhost:8080',
     'http://localhost:3000',
     'http://localhost:4173'
