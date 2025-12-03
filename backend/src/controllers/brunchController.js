@@ -257,6 +257,107 @@ export const updateBrunchMenu = [
   }
 ];
 
+// @desc    Add a new category to brunch menu
+// @route   POST /api/brunch/admin/category
+// @access  Private (Admin)
+export const addBrunchCategory = async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({ success: false, message: "Le nom de la catégorie est obligatoire." });
+    }
+
+    let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
+    if (!brunchMenu) {
+      brunchMenu = new BrunchMenu({ categories: [] });
+      await brunchMenu.save();
+    }
+
+    // Vérifier unicité du nom
+    const exists = brunchMenu.categories.find(cat => cat.name.toLowerCase().trim() === name.toLowerCase().trim());
+    if (exists) {
+      return res.status(400).json({ success: false, message: "Une catégorie avec ce nom existe déjà." });
+    }
+
+    const newCategory = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      description: description ? description.trim() : "",
+      products: [],
+      isActive: true
+    };
+
+    brunchMenu.categories.push(newCategory);
+    brunchMenu.lastUpdated = new Date();
+    await brunchMenu.save();
+
+    res.status(201).json({ success: true, category: newCategory, data: brunchMenu });
+  } catch (error) {
+    console.error("Erreur lors de l'ajout de la catégorie:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur lors de l'ajout de la catégorie." });
+  }
+};
+
+// @desc    Update a category in brunch menu
+// @route   PUT /api/brunch/admin/category/:categoryId
+// @access  Private (Admin)
+export const updateBrunchCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const { name, description, isActive } = req.body;
+
+    let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
+    if (!brunchMenu) {
+      return res.status(404).json({ success: false, message: "Menu brunch non trouvé." });
+    }
+
+    const category = brunchMenu.categories.find(cat => cat.id === categoryId);
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Catégorie non trouvée." });
+    }
+
+    if (name && name.trim().length > 0) category.name = name.trim();
+    if (description !== undefined) category.description = description.trim();
+    if (isActive !== undefined) category.isActive = isActive;
+
+    brunchMenu.lastUpdated = new Date();
+    await brunchMenu.save();
+
+    res.status(200).json({ success: true, category, data: brunchMenu });
+  } catch (error) {
+    console.error("Erreur lors de la modification de la catégorie:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur lors de la modification de la catégorie." });
+  }
+};
+
+// @desc    Delete a category from brunch menu
+// @route   DELETE /api/brunch/admin/category/:categoryId
+// @access  Private (Admin)
+export const deleteBrunchCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
+    if (!brunchMenu) {
+      return res.status(404).json({ success: false, message: "Menu brunch non trouvé." });
+    }
+
+    const index = brunchMenu.categories.findIndex(cat => cat.id === categoryId);
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: "Catégorie non trouvée." });
+    }
+
+    brunchMenu.categories.splice(index, 1);
+    brunchMenu.lastUpdated = new Date();
+    await brunchMenu.save();
+
+    res.status(200).json({ success: true, message: "Catégorie supprimée.", data: brunchMenu });
+  } catch (error) {
+    console.error("Erreur lors de la suppression de la catégorie:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur lors de la suppression de la catégorie." });
+  }
+};
+
 // @desc    Add formula to brunch menu
 // @route   POST /api/brunch/admin/category/:categoryId/product
 // @access  Private (Admin)
