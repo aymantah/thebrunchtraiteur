@@ -7,7 +7,7 @@ import { body, validationResult } from 'express-validator';
 export const getBrunchMenu = async (req, res) => {
   try {
     const brunchMenu = await BrunchMenu.getActiveMenu();
-    
+
     if (!brunchMenu) {
       return res.status(404).json({
         success: false,
@@ -37,13 +37,13 @@ export const getBrunchMenu = async (req, res) => {
 export const getAdminBrunchMenu = async (req, res) => {
   try {
     const brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
-    
+
     if (!brunchMenu) {
       const defaultMenu = new BrunchMenu({
         categories: []
       });
       await defaultMenu.save();
-      
+
       return res.status(200).json({
         success: true,
         data: defaultMenu
@@ -70,9 +70,9 @@ export const updateBrunchMenu = [
   async (req, res) => {
     try {
       const { action, categoryId, productId, categories } = req.body;
-      
+
       let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
-      
+
       if (!brunchMenu) {
         brunchMenu = new BrunchMenu();
       }
@@ -88,10 +88,10 @@ export const updateBrunchMenu = [
         }
 
         // Find and remove the product
-        const productIndex = category.products.findIndex(product => 
+        const productIndex = category.products.findIndex(product =>
           product._id.toString() === productId || product.id === productId
         );
-        
+
         if (productIndex === -1) {
           return res.status(404).json({
             success: false,
@@ -101,9 +101,9 @@ export const updateBrunchMenu = [
 
         category.products.splice(productIndex, 1);
         brunchMenu.lastUpdated = new Date();
-        
+
         await brunchMenu.save();
-        
+
         return res.status(200).json({
           success: true,
           message: 'Product deleted successfully',
@@ -122,10 +122,10 @@ export const updateBrunchMenu = [
         }
 
         // Find the product to update
-        const productIndex = category.products.findIndex(product => 
+        const productIndex = category.products.findIndex(product =>
           product._id.toString() === req.body.itemId || product.id === req.body.itemId
         );
-        
+
         if (productIndex === -1) {
           return res.status(404).json({
             success: false,
@@ -143,7 +143,7 @@ export const updateBrunchMenu = [
 
         brunchMenu.lastUpdated = new Date();
         await brunchMenu.save();
-        
+
         return res.status(200).json({
           success: true,
           message: 'Product updated successfully',
@@ -180,7 +180,7 @@ export const updateBrunchMenu = [
 
         brunchMenu.lastUpdated = new Date();
         await brunchMenu.save();
-        
+
         return res.status(200).json({
           success: true,
           message: 'Product added successfully',
@@ -199,10 +199,10 @@ export const updateBrunchMenu = [
         }
 
         // Find the plateau to update
-        const plateauIndex = category.plateaux?.findIndex(plateau => 
+        const plateauIndex = category.plateaux?.findIndex(plateau =>
           plateau._id.toString() === req.body.itemId || plateau.id === req.body.itemId
         );
-        
+
         if (plateauIndex === -1 || !category.plateaux) {
           return res.status(404).json({
             success: false,
@@ -220,7 +220,7 @@ export const updateBrunchMenu = [
 
         brunchMenu.lastUpdated = new Date();
         await brunchMenu.save();
-        
+
         return res.status(200).json({
           success: true,
           message: 'Plateau updated successfully',
@@ -232,9 +232,9 @@ export const updateBrunchMenu = [
       if (categories) {
         brunchMenu.categories = categories;
         brunchMenu.lastUpdated = new Date();
-        
+
         await brunchMenu.save();
-        
+
         return res.status(200).json({
           success: true,
           message: 'Brunch menu updated successfully',
@@ -257,104 +257,157 @@ export const updateBrunchMenu = [
   }
 ];
 
-// @desc    Add a new category to brunch menu
-// @route   POST /api/brunch/admin/category
-// @access  Private (Admin)
+
+// ========== GESTION DES CATÉGORIES ==========
+
 export const addBrunchCategory = async (req, res) => {
   try {
-    const { name, description } = req.body;
-    if (!name || name.trim().length === 0) {
-      return res.status(400).json({ success: false, message: "Le nom de la catégorie est obligatoire." });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
 
-    let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
+    const { id, name, icon, description, isActive, sortOrder } = req.body;
+
+    // Récupérer le menu brunch (il n'y en a qu'un seul)
+    let brunchMenu = await BrunchMenu.findOne();
+
+    // Si le menu n'existe pas, le créer
     if (!brunchMenu) {
-      brunchMenu = new BrunchMenu({ categories: [] });
-      await brunchMenu.save();
+      brunchMenu = new BrunchMenu({
+        categories: [],
+        isActive: true,
+        lastUpdated: new Date()
+      });
     }
 
-    // Vérifier unicité du nom
-    const exists = brunchMenu.categories.find(cat => cat.name.toLowerCase().trim() === name.toLowerCase().trim());
-    if (exists) {
-      return res.status(400).json({ success: false, message: "Une catégorie avec ce nom existe déjà." });
+    // Vérifier si la catégorie existe déjà
+    const existingCategory = brunchMenu.categories.find(cat => cat.id === id);
+    if (existingCategory) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category with this ID already exists'
+      });
     }
 
+    // Créer la nouvelle catégorie
     const newCategory = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      description: description ? description.trim() : "",
-      products: [],
-      isActive: true
+      id,
+      name,
+      icon: icon || 'Utensils',
+      description: description || '',
+      isActive: isActive !== undefined ? isActive : true,
+      sortOrder: sortOrder !== undefined ? parseInt(sortOrder) : 0,
+      products: []
     };
 
     brunchMenu.categories.push(newCategory);
     brunchMenu.lastUpdated = new Date();
+
     await brunchMenu.save();
 
-    res.status(201).json({ success: true, category: newCategory, data: brunchMenu });
+    res.status(201).json({
+      success: true,
+      message: 'Category added successfully',
+      category: newCategory
+    });
   } catch (error) {
-    console.error("Erreur lors de l'ajout de la catégorie:", error);
-    res.status(500).json({ success: false, message: "Erreur serveur lors de l'ajout de la catégorie." });
+    console.error('Error adding brunch category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 
-// @desc    Update a category in brunch menu
-// @route   PUT /api/brunch/admin/category/:categoryId
-// @access  Private (Admin)
 export const updateBrunchCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
-    const { name, description, isActive } = req.body;
+    const { name, icon, description, isActive, sortOrder } = req.body;
 
-    let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
+    const brunchMenu = await BrunchMenu.findOne();
+
     if (!brunchMenu) {
-      return res.status(404).json({ success: false, message: "Menu brunch non trouvé." });
+      return res.status(404).json({
+        success: false,
+        message: 'Brunch menu not found'
+      });
     }
 
     const category = brunchMenu.categories.find(cat => cat.id === categoryId);
+
     if (!category) {
-      return res.status(404).json({ success: false, message: "Catégorie non trouvée." });
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
     }
 
-    if (name && name.trim().length > 0) category.name = name.trim();
-    if (description !== undefined) category.description = description.trim();
+    // Mettre à jour les champs
+    if (name !== undefined) category.name = name;
+    if (icon !== undefined) category.icon = icon;
+    if (description !== undefined) category.description = description;
     if (isActive !== undefined) category.isActive = isActive;
+    if (sortOrder !== undefined) category.sortOrder = parseInt(sortOrder);
 
     brunchMenu.lastUpdated = new Date();
     await brunchMenu.save();
 
-    res.status(200).json({ success: true, category, data: brunchMenu });
+    res.json({
+      success: true,
+      message: 'Category updated successfully',
+      category
+    });
   } catch (error) {
-    console.error("Erreur lors de la modification de la catégorie:", error);
-    res.status(500).json({ success: false, message: "Erreur serveur lors de la modification de la catégorie." });
+    console.error('Error updating brunch category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 
-// @desc    Delete a category from brunch menu
-// @route   DELETE /api/brunch/admin/category/:categoryId
-// @access  Private (Admin)
 export const deleteBrunchCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
 
-    let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
+    const brunchMenu = await BrunchMenu.findOne();
+
     if (!brunchMenu) {
-      return res.status(404).json({ success: false, message: "Menu brunch non trouvé." });
+      return res.status(404).json({
+        success: false,
+        message: 'Brunch menu not found'
+      });
     }
 
-    const index = brunchMenu.categories.findIndex(cat => cat.id === categoryId);
-    if (index === -1) {
-      return res.status(404).json({ success: false, message: "Catégorie non trouvée." });
+    const categoryIndex = brunchMenu.categories.findIndex(cat => cat.id === categoryId);
+
+    if (categoryIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
     }
 
-    brunchMenu.categories.splice(index, 1);
+    // Supprimer la catégorie
+    brunchMenu.categories.splice(categoryIndex, 1);
     brunchMenu.lastUpdated = new Date();
+
     await brunchMenu.save();
 
-    res.status(200).json({ success: true, message: "Catégorie supprimée.", data: brunchMenu });
+    res.json({
+      success: true,
+      message: 'Category deleted successfully'
+    });
   } catch (error) {
-    console.error("Erreur lors de la suppression de la catégorie:", error);
-    res.status(500).json({ success: false, message: "Erreur serveur lors de la suppression de la catégorie." });
+    console.error('Error deleting brunch category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 
@@ -365,7 +418,7 @@ export const addBrunchProduct = [
   body('name').notEmpty().withMessage('Product name is required'),
   body('description').notEmpty().withMessage('Product description is required'),
   body('price').isNumeric().withMessage('Price must be a number'),
-  
+
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -377,16 +430,16 @@ export const addBrunchProduct = [
       }
 
       const { categoryId } = req.params;
-      
+
       let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
-      
+
       if (!brunchMenu) {
         return res.status(404).json({
           success: false,
           message: 'Brunch menu not found'
         });
       }
-      
+
       const category = brunchMenu.categories.find(cat => cat.id === categoryId);
       if (!category) {
         return res.status(404).json({
@@ -394,12 +447,12 @@ export const addBrunchProduct = [
           message: 'Category not found'
         });
       }
-      
+
       category.products.push(req.body);
       brunchMenu.lastUpdated = new Date();
-      
+
       await brunchMenu.save();
-      
+
       res.status(201).json({
         success: true,
         message: 'Product added successfully',
@@ -421,7 +474,7 @@ export const addBrunchProduct = [
 export const updateBrunchProduct = [
   body('name').optional().notEmpty().withMessage('Product name cannot be empty'),
   body('price').optional().isNumeric().withMessage('Price must be a number'),
-  
+
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -433,16 +486,16 @@ export const updateBrunchProduct = [
       }
 
       const { categoryId, productId } = req.params;
-      
+
       let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
-      
+
       if (!brunchMenu) {
         return res.status(404).json({
           success: false,
           message: 'Brunch menu not found'
         });
       }
-      
+
       const category = brunchMenu.categories.find(cat => cat.id === categoryId);
       if (!category) {
         return res.status(404).json({
@@ -450,7 +503,7 @@ export const updateBrunchProduct = [
           message: 'Category not found'
         });
       }
-      
+
       const product = category.products.id(productId);
       if (!product) {
         return res.status(404).json({
@@ -458,12 +511,12 @@ export const updateBrunchProduct = [
           message: 'Product not found'
         });
       }
-      
+
       Object.assign(product, req.body);
       brunchMenu.lastUpdated = new Date();
-      
+
       await brunchMenu.save();
-      
+
       res.status(200).json({
         success: true,
         message: 'Product updated successfully',
@@ -485,16 +538,16 @@ export const updateBrunchProduct = [
 export const deleteBrunchProduct = async (req, res) => {
   try {
     const { categoryId, productId } = req.params;
-    
+
     let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
-    
+
     if (!brunchMenu) {
       return res.status(404).json({
         success: false,
         message: 'Brunch menu not found'
       });
     }
-    
+
     const category = brunchMenu.categories.find(cat => cat.id === categoryId);
     if (!category) {
       return res.status(404).json({
@@ -502,7 +555,7 @@ export const deleteBrunchProduct = async (req, res) => {
         message: 'Category not found'
       });
     }
-    
+
     const product = category.products.id(productId);
     if (!product) {
       return res.status(404).json({
@@ -510,12 +563,12 @@ export const deleteBrunchProduct = async (req, res) => {
         message: 'Product not found'
       });
     }
-    
+
     product.remove();
     brunchMenu.lastUpdated = new Date();
-    
+
     await brunchMenu.save();
-    
+
     res.status(200).json({
       success: true,
       message: 'Product deleted successfully',
@@ -536,7 +589,7 @@ export const deleteBrunchProduct = async (req, res) => {
 export const createBrunchMenuItem = async (req, res) => {
   try {
     const { action, categoryId, productData } = req.body;
-    
+
     // Validation de base des données
     if (!action || !productData) {
       return res.status(400).json({
@@ -547,8 +600,8 @@ export const createBrunchMenuItem = async (req, res) => {
 
     // Validation des champs obligatoires
     const requiredFields = ['name', 'description', 'price'];
-    const missingFields = requiredFields.filter(field => 
-      !productData[field] || 
+    const missingFields = requiredFields.filter(field =>
+      !productData[field] ||
       (typeof productData[field] === 'string' && productData[field].trim().length === 0)
     );
 
@@ -565,7 +618,7 @@ export const createBrunchMenuItem = async (req, res) => {
       cleanPrice = cleanPrice.replace(/[€\s]/g, '').replace(',', '.');
     }
     cleanPrice = parseFloat(cleanPrice);
-    
+
     if (isNaN(cleanPrice) || cleanPrice <= 0) {
       return res.status(400).json({
         success: false,
@@ -579,9 +632,9 @@ export const createBrunchMenuItem = async (req, res) => {
         message: 'Le prix ne peut pas dépasser 1000€'
       });
     }
-    
+
     let brunchMenu = await BrunchMenu.findOne().sort({ updatedAt: -1 });
-    
+
     if (!brunchMenu) {
       brunchMenu = new BrunchMenu({ categories: [] });
       await brunchMenu.save();
@@ -601,7 +654,7 @@ export const createBrunchMenuItem = async (req, res) => {
       const existingProduct = category.products.find(
         product => product.name.toLowerCase().trim() === productData.name.toLowerCase().trim()
       );
-      
+
       if (existingProduct) {
         return res.status(400).json({
           success: false,
@@ -629,7 +682,7 @@ export const createBrunchMenuItem = async (req, res) => {
 
       brunchMenu.lastUpdated = new Date();
       await brunchMenu.save();
-      
+
       return res.status(201).json({
         success: true,
         message: 'Produit ajouté avec succès',
@@ -644,7 +697,7 @@ export const createBrunchMenuItem = async (req, res) => {
 
   } catch (error) {
     console.error('Error creating brunch menu item:', error);
-    
+
     // Gestion spécifique des erreurs de validation Mongoose
     if (error.name === 'ValidationError') {
       const validationErrors = Object.values(error.errors).map(err => err.message);
@@ -653,7 +706,7 @@ export const createBrunchMenuItem = async (req, res) => {
         message: `Erreurs de validation: ${validationErrors.join(', ')}`
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: 'Erreur serveur lors de la création du produit'
