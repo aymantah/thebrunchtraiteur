@@ -95,10 +95,128 @@ export const createLunchMenuItem = async (req, res) => {
     
     if (!lunchMenu) {
       lunchMenu = new LunchMenu(req.body);
-    } else {
-      Object.assign(lunchMenu, req.body);
+      lunchMenu.lastUpdated = new Date();
+      await lunchMenu.save();
+      return res.status(201).json({
+        success: true,
+        message: 'Lunch menu created successfully',
+        data: lunchMenu
+      });
     }
 
+    const { action, categoryId } = req.body;
+
+    // Handle product addition
+    if (action === 'addProduct' && categoryId && req.body.productData) {
+      const category = lunchMenu.categories.find(cat => cat.id === categoryId);
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: 'Category not found'
+        });
+      }
+
+      // Create new product
+      const newProduct = {
+        name: req.body.productData.name || '',
+        description: req.body.productData.description || '',
+        price: req.body.productData.price || '',
+        quantity: req.body.productData.quantity || '',
+        isPremium: req.body.productData.isPremium !== undefined ? req.body.productData.isPremium : false,
+        image: req.body.productData.image || '',
+        isActive: req.body.productData.isActive !== undefined ? req.body.productData.isActive : true,
+        sortOrder: req.body.productData.sortOrder !== undefined ? parseInt(req.body.productData.sortOrder) : 0
+      };
+
+      // Add product to category
+      if (!category.products) {
+        category.products = [];
+      }
+      category.products.push(newProduct);
+
+      lunchMenu.lastUpdated = new Date();
+      await lunchMenu.save();
+
+      return res.status(201).json({
+        success: true,
+        message: 'Product added successfully',
+        data: lunchMenu
+      });
+    }
+
+    // Handle product update
+    if (action === 'updateProduct' && categoryId && req.body.productId) {
+      const category = lunchMenu.categories.find(cat => cat.id === categoryId);
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: 'Category not found'
+        });
+      }
+
+      const productIndex = category.products?.findIndex(prod =>
+        prod._id.toString() === req.body.productId
+      );
+
+      if (productIndex === -1 || !category.products) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+
+      // Update the product with new data
+      const updates = req.body.updates;
+      Object.keys(updates).forEach(key => {
+        if (updates[key] !== undefined) {
+          category.products[productIndex][key] = updates[key];
+        }
+      });
+
+      lunchMenu.lastUpdated = new Date();
+      await lunchMenu.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Product updated successfully',
+        data: lunchMenu
+      });
+    }
+
+    // Handle product deletion
+    if (action === 'deleteProduct' && categoryId && req.body.productId) {
+      const category = lunchMenu.categories.find(cat => cat.id === categoryId);
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: 'Category not found'
+        });
+      }
+
+      const productIndex = category.products?.findIndex(prod =>
+        prod._id.toString() === req.body.productId
+      );
+
+      if (productIndex === -1 || !category.products) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+
+      category.products.splice(productIndex, 1);
+      lunchMenu.lastUpdated = new Date();
+      await lunchMenu.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Product deleted successfully',
+        data: lunchMenu
+      });
+    }
+
+    // Default: update entire menu
+    Object.assign(lunchMenu, req.body);
     lunchMenu.lastUpdated = new Date();
     await lunchMenu.save();
 
