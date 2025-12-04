@@ -145,7 +145,7 @@ export const createLunchMenuItem = async (req, res) => {
     }
 
     // Handle product update
-    if (action === 'updateProduct' && categoryId && req.body.productId) {
+    if (action === 'updateProduct' && categoryId && req.body.itemId) {
       const category = lunchMenu.categories.find(cat => cat.id === categoryId);
       if (!category) {
         return res.status(404).json({
@@ -155,7 +155,7 @@ export const createLunchMenuItem = async (req, res) => {
       }
 
       const productIndex = category.products?.findIndex(prod =>
-        prod._id.toString() === req.body.productId
+        prod._id.toString() === req.body.itemId || prod.id === req.body.itemId
       );
 
       if (productIndex === -1 || !category.products) {
@@ -184,7 +184,7 @@ export const createLunchMenuItem = async (req, res) => {
     }
 
     // Handle product deletion
-    if (action === 'deleteProduct' && categoryId && req.body.productId) {
+    if (action === 'deleteProduct' && categoryId && req.body.itemId) {
       const category = lunchMenu.categories.find(cat => cat.id === categoryId);
       if (!category) {
         return res.status(404).json({
@@ -194,7 +194,7 @@ export const createLunchMenuItem = async (req, res) => {
       }
 
       const productIndex = category.products?.findIndex(prod =>
-        prod._id.toString() === req.body.productId
+        prod._id.toString() === req.body.itemId || prod.id === req.body.itemId
       );
 
       if (productIndex === -1 || !category.products) {
