@@ -169,6 +169,7 @@ export const updateBrunchMenu = [
           price: req.body.productData.price || '',
           items: req.body.productData.items || [],
           lastItem: req.body.productData.lastItem || '',
+          image: req.body.productData.image || '',
           isActive: req.body.productData.isActive !== undefined ? req.body.productData.isActive : true
         };
 
@@ -671,6 +672,7 @@ export const createBrunchMenuItem = async (req, res) => {
         quantity: productData.quantity ? productData.quantity.trim() : '',
         items: productData.items || [],
         lastItem: productData.lastItem ? productData.lastItem.trim() : '',
+        image: productData.image || '',
         isActive: productData.isActive !== undefined ? productData.isActive : true
       };
 
