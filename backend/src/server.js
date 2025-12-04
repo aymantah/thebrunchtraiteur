@@ -29,17 +29,36 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
+// Debug CORS en développement
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    console.log('🌍 CORS Debug:', {
+      origin: req.headers.origin,
+      method: req.method,
+      allowedOrigins: [
+        process.env.FRONTEND_URL,
+        process.env.ADMIN_URL
+      ]
+    });
+    next();
+  });
+}
+
 app.use(cors({
   origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173' || 'https://www.thebrunchtraiteur.fr',
-    process.env.ADMIN_URL || 'http://localhost:5174' || 'https://www.thebrunchtraiteur.fr/admin',
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    process.env.ADMIN_URL || 'http://localhost:5174',
     'http://localhost:8080',
     'http://localhost:3000',
-    'http://localhost:4173'
+    'http://localhost:4173',
+    'https://thebrunch.netlify.app',
+    'https://*.netlify.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  optionsSuccessStatus: 200
 }));
 
 // Rate limiting
