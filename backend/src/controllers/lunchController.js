@@ -15,13 +15,31 @@ export const getLunchMenu = async (req, res) => {
     }
 
     // Filter active categories and products
+    const menuObject = lunchMenu.toObject();
     const filteredMenu = {
-      ...lunchMenu.toObject(),
-      categories: lunchMenu.categories
+      ...menuObject,
+      categories: menuObject.categories
         .filter(cat => cat.isActive)
         .map(cat => ({
-          ...cat,
-          products: cat.products.filter(prod => prod.isActive)
+          id: cat.id,
+          name: cat.name,
+          icon: cat.icon,
+          description: cat.description,
+          isActive: cat.isActive,
+          sortOrder: cat.sortOrder,
+          products: cat.products
+            .filter(prod => prod.isActive)
+            .map(prod => ({
+              _id: prod._id,
+              name: prod.name,
+              description: prod.description,
+              price: prod.price,
+              quantity: prod.quantity,
+              isPremium: prod.isPremium,
+              image: prod.image,
+              isActive: prod.isActive,
+              sortOrder: prod.sortOrder
+            }))
         }))
     };
 
