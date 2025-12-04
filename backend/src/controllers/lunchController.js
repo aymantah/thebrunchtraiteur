@@ -104,7 +104,39 @@ export const createLunchMenuItem = async (req, res) => {
       });
     }
 
-    const { action, categoryId } = req.body;
+    const { action, categoryId, productId } = req.body;
+
+    // Handle product deletion (must be before updates to avoid conflicts)
+    if (action === 'deleteProduct' && categoryId && productId) {
+      const category = lunchMenu.categories.find(cat => cat.id === categoryId);
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: 'Category not found'
+        });
+      }
+
+      const productIndex = category.products?.findIndex(prod =>
+        prod._id.toString() === productId || prod.id === productId
+      );
+
+      if (productIndex === -1 || !category.products) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+
+      category.products.splice(productIndex, 1);
+      lunchMenu.lastUpdated = new Date();
+      await lunchMenu.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Product deleted successfully',
+        data: lunchMenu
+      });
+    }
 
     // Handle product addition
     if (action === 'addProduct' && categoryId && req.body.productData) {
@@ -179,38 +211,6 @@ export const createLunchMenuItem = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: 'Product updated successfully',
-        data: lunchMenu
-      });
-    }
-
-    // Handle product deletion
-    if (action === 'deleteProduct' && categoryId && req.body.itemId) {
-      const category = lunchMenu.categories.find(cat => cat.id === categoryId);
-      if (!category) {
-        return res.status(404).json({
-          success: false,
-          message: 'Category not found'
-        });
-      }
-
-      const productIndex = category.products?.findIndex(prod =>
-        prod._id.toString() === req.body.itemId || prod.id === req.body.itemId
-      );
-
-      if (productIndex === -1 || !category.products) {
-        return res.status(404).json({
-          success: false,
-          message: 'Product not found'
-        });
-      }
-
-      category.products.splice(productIndex, 1);
-      lunchMenu.lastUpdated = new Date();
-      await lunchMenu.save();
-
-      return res.status(200).json({
-        success: true,
-        message: 'Product deleted successfully',
         data: lunchMenu
       });
     }
