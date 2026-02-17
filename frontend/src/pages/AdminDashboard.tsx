@@ -522,7 +522,7 @@ const AdminDashboard = () => {
 
   const renderProductTable = (data, menuType) => {
     if (menuType === 'reveillon') {
-  const plateaux = data.plateaux || [];
+  const plateaux = data?.plateaux ?? [];
 
   return (
     <Card>
@@ -536,7 +536,7 @@ const AdminDashboard = () => {
         </CardTitle>
 
         <Button
-          className="bg-gradient-to-r from-[#cbb36f] to-[#99771b] hover:from-[#b8a060] hover:to-[#856818]"
+          className="bg-gradient-to-r from-[#cbb36f] to-[#99771b]"
           onClick={() => handleAddPlateau('reveillon')}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -556,7 +556,7 @@ const AdminDashboard = () => {
                 <TableHead>Nom</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Prix</TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead>Items</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -564,53 +564,14 @@ const AdminDashboard = () => {
             <TableBody>
               {plateaux.map((plateau) => (
                 <TableRow key={plateau._id || plateau.id}>
-                  <TableCell className="font-medium">
-                    {plateau.title}
-                  </TableCell>
-
-                  <TableCell className="max-w-md">
-                    <p className="truncate" title={plateau.description}>
-                      {plateau.description}
-                    </p>
-                  </TableCell>
-
+                  <TableCell>{plateau.title}</TableCell>
+                  <TableCell>{plateau.description}</TableCell>
+                  <TableCell>{plateau.price}</TableCell>
                   <TableCell>
-                    <Badge
-                      variant="outline"
-                      className="text-[#99771b] border-[#99771b]"
-                    >
-                      {plateau.price}
-                    </Badge>
+                    {plateau.items?.length || 0}
                   </TableCell>
-
-                  <TableCell>
-                    {plateau.items?.length || 0} items
-                  </TableCell>
-
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() =>
-                          editProduct(menuType, null, plateau._id || plateau.id)
-                        }
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
-                        onClick={() =>
-                          deleteProduct(menuType, null, plateau._id || plateau.id)
-                        }
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    Actions
                   </TableCell>
                 </TableRow>
               ))}
@@ -621,7 +582,6 @@ const AdminDashboard = () => {
     </Card>
   );
 }
-
 
     // Regular handling for brunch and lunch menus (categories)
     const categories = data.categories;
