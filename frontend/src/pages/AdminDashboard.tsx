@@ -523,14 +523,6 @@ const AdminDashboard = () => {
   const renderProductTable = (data, menuType) => {
     if (menuType === 'reveillon') {
       // Special handling for réveillon menu (plateaux)
-      if (!data.plateaux || data.plateaux.length === 0) {
-        return (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Aucun plateau trouvé</p>
-          </div>
-        );
-      }
-
       return (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -548,6 +540,13 @@ const AdminDashboard = () => {
             </Button>
           </CardHeader>
           <CardContent>
+            if (!data.plateaux || data.plateaux.length === 0) {
+        return (
+          <div className="text-center py-8">
+            <p className="text-gray-500">Aucun plateau trouvé</p>
+          </div>
+        );
+      }
             <Table>
               <TableHeader>
                 <TableRow>
