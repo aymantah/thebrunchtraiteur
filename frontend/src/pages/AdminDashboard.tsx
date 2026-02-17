@@ -304,131 +304,115 @@ const AdminDashboard = () => {
     setEditModalOpen(true);
   };
 
-  // Fonction pour sauvegarder (création ou modification)
-  const handleSaveProduct = async () => {
-    // Réinitialiser les erreurs
-    setFormErrors({});
-    
-    // Validation du formulaire
-    if (!validateForm()) {
-      toast({
-        title: "Erreurs de validation",
-        description: "Veuillez corriger les erreurs dans le formulaire",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      toast({
-        title: "Erreur d'authentification",
-        description: "Vous devez être connecté pour effectuer cette action",
-        variant: "destructive",
-      });
-      navigate('/admin/login');
-      return;
-    }
+  // Fonction pour sauvegarder (création ou modification)const handleSaveProduct = async () => {
+  setFormErrors({});
 
-    setIsSubmitting(true);
+  if (!validateForm()) {
+    toast({
+      title: "Erreurs de validation",
+      description: "Veuillez corriger les erreurs dans le formulaire",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    try {
-      // Nettoyer les données avant envoi
-      const cleanedFormData = cleanFormData();
-      
-      let requestData;
-      let method = 'PUT';
-      
+  const token = localStorage.getItem('adminToken');
+  if (!token) {
+    navigate('/admin/login');
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const cleanedFormData = cleanFormData();
+
+    let endpoint = '';
+    let method = 'POST';
+    let bodyData = cleanedFormData;
+
+    /* ============================
+       MENU REVEILLON (PLATEAUX)
+    ============================ */
+    if (editingMenuType === 'reveillon') {
+      const plateauId = editingItem?._id || editingItem?.id;
+
       if (editingItem) {
-        // Mode modification
-        if (editingMenuType === 'reveillon') {
-          requestData = {
-            action: 'updateProduct',
-            itemId: editingItem._id || editingItem.id,
-            updates: cleanedFormData
-          };
-        } else {
-          requestData = {
-            action: editingType === 'plateau' ? 'updatePlateau' : 'updateProduct',
-            itemId: editingItem._id || editingItem.id,
-            categoryId: editingCategoryId,
-            updates: cleanedFormData
-          };
-        }
+        // UPDATE plateau
+        endpoint = `http://localhost:5000/api/reveillon/admin/plateau/${plateauId}`;
+        method = 'PUT';
       } else {
-        // Mode création
+        // CREATE plateau
+        endpoint = `http://localhost:5000/api/reveillon/admin/plateau`;
         method = 'POST';
-        if (editingMenuType === 'reveillon') {
-          requestData = {
-            action: 'addProduct',
-            productData: cleanedFormData
-          };
-        } else {
-          requestData = {
-            action: editingType === 'plateau' ? 'addPlateau' : 'addProduct',
-            categoryId: editingCategoryId,
-            productData: cleanedFormData
-          };
-        }
       }
+    }
 
-      console.log('📤 Envoi de la requête:', {
-        method,
-        endpoint: `http://localhost:5000/api/${editingMenuType}/admin`,
-        data: requestData
-      });
+    /* ============================
+       LUNCH / BRUNCH (logique actuelle)
+    ============================ */
+    else {
+      endpoint = `http://localhost:5000/api/${editingMenuType}/admin`;
 
-      const response = await fetch(`http://localhost:5000/api/${editingMenuType}/admin`, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: "Succès",
-          description: editingItem 
-            ? `${editingType === 'plateau' ? 'Plateau' : 'Produit'} modifié avec succès` 
-            : `${editingType === 'plateau' ? 'Plateau' : 'Produit'} créé avec succès`,
-          variant: "default",
-        });
-        
-        setEditModalOpen(false);
-        fetchAllMenus(); // Recharger les données
+      if (editingItem) {
+        method = 'PUT';
+        bodyData = {
+          action: 'updateProduct',
+          itemId: editingItem._id || editingItem.id,
+          categoryId: editingCategoryId,
+          updates: cleanedFormData
+        };
       } else {
-        console.error('❌ Erreur de réponse:', result);
-        
-        // Gestion spécifique des erreurs de validation backend
-        if (result.message && result.message.includes('validation failed')) {
-          toast({
-            title: "Erreur de validation",
-            description: "Certains champs ne sont pas valides. Vérifiez le prix et les champs obligatoires.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Erreur",
-            description: result.message || "Une erreur est survenue lors de l'enregistrement",
-            variant: "destructive",
-          });
-        }
+        method = 'POST';
+        bodyData = {
+          action: 'addProduct',
+          categoryId: editingCategoryId,
+          productData: cleanedFormData
+        };
       }
-    } catch (error) {
-      console.error('❌ Erreur lors de l\'enregistrement:', error);
+    }
+
+    const response = await fetch(endpoint, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
       toast({
-        title: "Erreur de connexion",
-        description: "Impossible de contacter le serveur. Vérifiez votre connexion.",
+        title: "Succès",
+        description: editingItem
+          ? "Produit modifié avec succès"
+          : "Produit créé avec succès",
+      });
+
+      setEditModalOpen(false);
+      fetchAllMenus();
+    } else {
+      toast({
+        title: "Erreur",
+        description: result.message || "Erreur lors de l'enregistrement",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+
+  } catch (error) {
+    console.error(error);
+    toast({
+      title: "Erreur serveur",
+      description: "Impossible de contacter le serveur",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   // Fonction pour uploader l'image vers Cloudinary
   const handleImageUpload = async (file) => {
@@ -491,32 +475,50 @@ const AdminDashboard = () => {
   };
 
   const deleteProduct = async (menuType, categoryId, productId) => {
-    const token = localStorage.getItem('adminToken');
-    const confirmed = window.confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');
-    
-    if (!confirmed) return;
+  const token = localStorage.getItem('adminToken');
+  const confirmed = window.confirm('Supprimer cet élément ?');
 
-    try {
-      const response = await fetch(`http://localhost:5000/api/${menuType}/admin`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'deleteProduct',
-          categoryId,
-          productId
-        })
-      });
+  if (!confirmed) return;
 
-      if (response.ok) {
-        fetchAllMenus();
-      }
-    } catch (error) {
-      console.error('Error deleting product:', error);
+  try {
+    /* ========= REVEILLON ========= */
+    if (menuType === 'reveillon') {
+      await fetch(
+        `http://localhost:5000/api/reveillon/admin/plateau/${productId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      fetchAllMenus();
+      return;
     }
-  };
+
+    /* ========= LUNCH / BRUNCH ========= */
+    await fetch(`http://localhost:5000/api/${menuType}/admin`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'deleteProduct',
+        categoryId,
+        productId
+      })
+    });
+
+    fetchAllMenus();
+
+  } catch (error) {
+    console.error('Error deleting product:', error);
+  }
+};
+
 
   const renderProductTable = (data, menuType) => {
     if (menuType === 'reveillon') {
