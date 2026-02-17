@@ -522,81 +522,106 @@ const AdminDashboard = () => {
 
   const renderProductTable = (data, menuType) => {
     if (menuType === 'reveillon') {
-      // Special handling for réveillon menu (plateaux)
-      return (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <MenuIcon className="h-5 w-5" />
-              Plateaux Réveillon
-              <Badge variant="secondary">{data.plateaux.length} plateaux</Badge>
-            </CardTitle>
-            <Button 
-              className="bg-gradient-to-r from-[#cbb36f] to-[#99771b] hover:from-[#b8a060] hover:to-[#856818]"
-              onClick={() => handleAddPlateau('reveillon')}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter un plateau
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Prix</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+  const plateaux = data.plateaux || [];
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <MenuIcon className="h-5 w-5" />
+          Plateaux Réveillon
+          <Badge variant="secondary">
+            {plateaux.length} plateaux
+          </Badge>
+        </CardTitle>
+
+        <Button
+          className="bg-gradient-to-r from-[#cbb36f] to-[#99771b] hover:from-[#b8a060] hover:to-[#856818]"
+          onClick={() => handleAddPlateau('reveillon')}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Ajouter un plateau
+        </Button>
+      </CardHeader>
+
+      <CardContent>
+        {plateaux.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            Aucun plateau trouvé
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nom</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Prix</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {plateaux.map((plateau) => (
+                <TableRow key={plateau._id || plateau.id}>
+                  <TableCell className="font-medium">
+                    {plateau.title}
+                  </TableCell>
+
+                  <TableCell className="max-w-md">
+                    <p className="truncate" title={plateau.description}>
+                      {plateau.description}
+                    </p>
+                  </TableCell>
+
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className="text-[#99771b] border-[#99771b]"
+                    >
+                      {plateau.price}
+                    </Badge>
+                  </TableCell>
+
+                  <TableCell>
+                    {plateau.items?.length || 0} items
+                  </TableCell>
+
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() =>
+                          editProduct(menuType, null, plateau._id || plateau.id)
+                        }
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                        onClick={() =>
+                          deleteProduct(menuType, null, plateau._id || plateau.id)
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.plateaux.map((plateau) => (
-                  <TableRow key={plateau._id || plateau.id}>
-                    <TableCell className="font-medium">{plateau.title}</TableCell>
-                    <TableCell className="max-w-md">
-                      <p className="truncate" title={plateau.description}>
-                        {plateau.description}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[#99771b] border-[#99771b]">
-                        {plateau.price}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-600">
-                        {plateau.items?.length || 0} items
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => editProduct(menuType, null, plateau._id || plateau.id)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => deleteProduct(menuType, null, plateau._id || plateau.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      );
-    }
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 
     // Regular handling for brunch and lunch menus (categories)
     const categories = data.categories;
