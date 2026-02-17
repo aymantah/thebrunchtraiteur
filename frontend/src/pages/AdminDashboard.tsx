@@ -540,13 +540,6 @@ const AdminDashboard = () => {
             </Button>
           </CardHeader>
           <CardContent>
-            if (!data.plateaux || data.plateaux.length === 0) {
-        return (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Aucun plateau trouvé</p>
-          </div>
-        );
-      }
             <Table>
               <TableHeader>
                 <TableRow>
