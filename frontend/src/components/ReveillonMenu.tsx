@@ -128,8 +128,8 @@ export const ReveillonMenu = () => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
                   {/* Floating Price Tag */}
-                  <div className="absolute bottom-6 left-1/3">
-                    <div className="bg-white/75 backdrop-blur-md rounded-2xl px-6 py-3 shadow-2xl flex items-center gap-4">
+                  <div className="absolute bottom-6 left-1/3 flex items-center justify-center gap-4">
+                    <div className="bg-white/75 backdrop-blur-md rounded-2xl px-6 py-3 shadow-2xl items-center gap-4">
                       <div className="text-3xl font-bold text-gray-800">{plateau.price}</div>
                       <div className="text-sm text-gray-600 font-medium">par plateau</div>
                     </div>
